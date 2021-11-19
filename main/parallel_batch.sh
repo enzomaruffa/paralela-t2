@@ -12,14 +12,13 @@ printf "particle_count,timesteps,threads,sample,time\n" > data/times_results.txt
 for INPUT in ${INPUT_SIZES[*]}; do
     for TIMESTEP in ${TIMESTEPS[*]}; do
         for THREAD_COUNT in ${THREADS[*]}; do
-            export OMP_NUM_THREADS=$THREAD_COUNT
+            echo "Enzolitos cpu=$THREAD_COUNT" > hosts
             for ITERATION in `seq $ITERATIONS`; do
                 echo "Running ($INPUT, $TIMESTEP, $THREAD_COUNT) iteration $ITERATION"
                 
                 printf "${INPUT}\n${TIMESTEP}\n" > .temp/parallel_batch_input.in
 
-                RUN_TIME=$({ time ./nbody < .temp/parallel_batch_input.in >.temp/temp_output.txt; } 2>&1)
-
+                RUN_TIME=$({ time mpirun --hostfile hosts -np $THREAD_COUNT nbody < .temp/parallel_batch_input.in >.temp/temp_output.txt; } 2>&1)
                 diff .temp/temp_output.txt ../original/outputs/${INPUT}_${TIMESTEP}.txt > .temp/temp_diff.txt
 
                 if [ -s .temp/temp_diff.txt ]; then
