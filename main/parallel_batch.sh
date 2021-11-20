@@ -1,6 +1,6 @@
 export TIMEFORMAT=%R
 INPUT_SIZES=(100 1000 2000 4000 5000 8000 10000 12000 15000 20000 25000 30000)
-TIMESTEPS=(50)
+TIMESTEPS=(10)
 THREADS=(1 2 4 8 12)
 ITERATIONS=30
 
@@ -12,7 +12,7 @@ printf "particle_count,timesteps,threads,sample,time\n" > data/times_results.txt
 for INPUT in ${INPUT_SIZES[*]}; do
     for TIMESTEP in ${TIMESTEPS[*]}; do
         for THREAD_COUNT in ${THREADS[*]}; do
-            echo "Enzolitos cpu=$THREAD_COUNT" > hosts
+            echo "ratatule cpu=$THREAD_COUNT" > hosts
             for ITERATION in `seq $ITERATIONS`; do
                 echo "Running ($INPUT, $TIMESTEP, $THREAD_COUNT) iteration $ITERATION"
                 

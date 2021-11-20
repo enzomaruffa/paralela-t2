@@ -152,18 +152,18 @@ int main(int argc, char *argv[])
   // for (int p = 0; p < nparts[rank]; p++)
   //   printf("[debug] Process [%d]: [%d]=%f\n", rank, p, pv[p].fx);
 
+  // rank 0 broadcasts positions of all particles
+  MPI_Bcast(particles, npart, MPI_PARTICLE, ROOT, MPI_COMM_WORLD); 
+  // printf("[debug] Broadcast done done! Process [%d] now should have the particles\n", rank);
+  // printf("[debug] [%d] Particles: \n", rank);
+  // for (int p = 0; p < npart; p++)
+  //   printf("[debug] Rank: %d, [%d.x]=%f, [%d.y]=%f\n", rank, p, particles[p].x, p, particles[p].y);
+
   while (cnt--)
   {
     double max_f;
     double final_max_f;
     /* Compute forces (2D only) */
-    
-    // rank 0 broadcasts positions of all particles
-    MPI_Bcast(particles, npart, MPI_PARTICLE, ROOT, MPI_COMM_WORLD); 
-    // printf("[debug] Broadcast done done! Process [%d] now should have the particles\n", rank);
-    // printf("[debug] [%d] Particles: \n", rank);
-    // for (int p = 0; p < npart; p++)
-    //   printf("[debug] Rank: %d, [%d.x]=%f, [%d.y]=%f\n", rank, p, particles[p].x, p, particles[p].y);
 
     // each rank computes the forces for their group of particles
     max_f = ComputeForces(particles, particles, pv, npart, starting_i, my_npart);
