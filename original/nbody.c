@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
+#include <sys/time.h>
 
 /*
  * pRNG based on http://www.cs.wm.edu/~va/software/park/park.html
@@ -50,20 +51,48 @@ double ComputeNewPos( Particle [], ParticleV [], int, double);
 
 int main()
 {
+    struct timeval start, end;
+    double time_taken;
+
+    struct timeval total_start, total_end;
+    double total_time;
+  
+    // start timer.
+    gettimeofday(&total_start, NULL);
+
     double time;
     Particle  * particles;   /* Particles */
     ParticleV * pv;          /* Particle velocity */
     int         npart, i, j;
     int         cnt;         /* number of times in loop */
     double      sim_t;       /* Simulation time */
+  
+    // start timer.
+    gettimeofday(&start, NULL);
+
     int tmp;
     tmp = fscanf(stdin,"%d\n",&npart);
     tmp = fscanf(stdin,"%d\n",&cnt);
+
+    gettimeofday(&end, NULL);
+
+    // Calculating total time taken by the program.
+    time_taken += ((end.tv_sec - start.tv_sec) * 1e6 + (end.tv_usec - start.tv_usec)) * 1e-6;
+
 /* Allocate memory for particles */
     particles = (Particle *) malloc(sizeof(Particle)*npart);
     pv = (ParticleV *) malloc(sizeof(ParticleV)*npart);
 /* Generate the initial values */
+    // start timer.
+    gettimeofday(&start, NULL);
+
     InitParticles( particles, pv, npart);
+
+    gettimeofday(&end, NULL);
+
+    // Calculating total time taken by the program.
+    time_taken += ((end.tv_sec - start.tv_sec) * 1e6 + (end.tv_usec - start.tv_usec)) * 1e-6;
+
     sim_t = 0.0;
 
     while (cnt--) {
@@ -73,8 +102,23 @@ int main()
       /* Once we have the forces, we compute the changes in position */
       sim_t += ComputeNewPos( particles, pv, npart, max_f);
     }
+    gettimeofday(&start, NULL);
+
     for (i=0; i<npart; i++)
       fprintf(stdout,"%.5lf %.5lf %.5lf\n", particles[i].x, particles[i].y, particles[i].z);
+
+    gettimeofday(&end, NULL);
+
+    // Calculating total time taken by the program.
+    time_taken += ((end.tv_sec - start.tv_sec) * 1e6 + (end.tv_usec - start.tv_usec)) * 1e-6;
+
+    // start timer.
+    gettimeofday(&total_end, NULL);
+    total_time += ((total_end.tv_sec - total_start.tv_sec) * 1e6 + (total_end.tv_usec - total_start.tv_usec)) * 1e-6;
+
+    printf("total time: %f\n", total_time);
+    printf("seq time: %f\n", time_taken);
+
     return 0;
 }
 
