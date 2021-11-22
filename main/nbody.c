@@ -79,19 +79,8 @@ int main(int argc, char *argv[])
 
   MPI_Bcast(&npart, 1, MPI_INT, ROOT, MPI_COMM_WORLD); 
   MPI_Bcast(&cnt, 1, MPI_INT, ROOT, MPI_COMM_WORLD); 
-  
-  // printf("[debug] Process [%d] has the npart and cnt!\n", rank);
 
   // ========== Defines the indexes
-
-  // MPI_Recv(&npart, 1, MPI_INT, MPI_ANY_SOURCE, STD_TAG, MPI_COMM_WORLD, &status);
-  float percentage = (float)rank / proc_count;
-  int starting_i = (int)ceil(percentage * npart);
-  float next_percentage = (float)(rank+1) / proc_count;
-  int end_i = MIN((int)ceil(next_percentage * npart), npart);
-  int my_npart = end_i - starting_i;
-
-  // printf("%d: starting_i %d, end_i %d, my_npart %d\n", rank, starting_i, end_i, my_npart);
 
   int starting_is[proc_count];
   int nparts[proc_count];
@@ -104,11 +93,10 @@ int main(int argc, char *argv[])
 
     starting_is[p] = starting_i;
     nparts[p] = end_i - starting_i;
-    
-    // printf("[debug] [%d] %d: starting_i %d, nparts %d\n", rank, p, starting_is[p], nparts[p]);
   }
 
-  // printf("[debug] Process [%d] has the starting_is and nparts!\n", rank);
+  int starting_i = starting_is[rank];
+  int my_npart = nparts[rank];
 
   // =========== Instances stuff
   
@@ -123,7 +111,6 @@ int main(int argc, char *argv[])
   all_pv = (ParticleV *)malloc(sizeof(ParticleV) * npart); 
 
   // =========== Data types
- 
   MPI_Datatype MPI_PARTICLE;
   MPI_Type_contiguous(4, MPI_DOUBLE, &MPI_PARTICLE);
   MPI_Type_commit(&MPI_PARTICLE);
@@ -137,57 +124,30 @@ int main(int argc, char *argv[])
     InitParticles(particles, all_pv, npart);
   }
   
-  // rank 0 broadcasts positions of all particles velocities
+  // rank 0 scatters positions of all particles velocities
   MPI_Scatterv(all_pv, nparts, starting_is,
                 MPI_PARTICLEV, pv, nparts[rank],
                 MPI_PARTICLEV, ROOT, MPI_COMM_WORLD);
 
-  // printf("[debug] Scatter done! Process [%d] now should have the particles velocities\n", rank);
-  // if (rank == 0) {
-  //   printf("[debug] All pvs: \n");
-  //   for (int p = 0; p < npart; p++)
-  //     printf("[debug] Rank: %d, [%d]=%f\n", rank, p, all_pv[p].fx);
-  // }
-  // printf("[debug] PVs: \n");
-  // for (int p = 0; p < nparts[rank]; p++)
-  //   printf("[debug] Process [%d]: [%d]=%f\n", rank, p, pv[p].fx);
-
   // rank 0 broadcasts positions of all particles
   MPI_Bcast(particles, npart, MPI_PARTICLE, ROOT, MPI_COMM_WORLD); 
-  // printf("[debug] Broadcast done done! Process [%d] now should have the particles\n", rank);
-  // printf("[debug] [%d] Particles: \n", rank);
-  // for (int p = 0; p < npart; p++)
-  //   printf("[debug] Rank: %d, [%d.x]=%f, [%d.y]=%f\n", rank, p, particles[p].x, p, particles[p].y);
 
   while (cnt--)
   {
     double max_f;
     double final_max_f;
-    /* Compute forces (2D only) */
 
+    /* Compute forces (2D only) */
     // each rank computes the forces for their group of particles
     max_f = ComputeForces(particles, particles, pv, npart, starting_i, my_npart);
-    // printf("[debug] [%d] PVs: \n", rank);
-    // for (int p = 0; p < my_npart; p++)
-    //   printf("[debug] Rank: %d, [%d.fx]=%f, [%d.fy]=%f\n", rank, p, pv[p].fx, p, pv[p].fy);
-
-    // MPI_Barrier(MPI_COMM_WORLD);
 
     // Need to reduce the max_f to all processes
     MPI_Allreduce(&max_f, &final_max_f, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
-    // printf("[debug] MPI_Allreduce done done! Process [%d] now should have the proper final_max_f=%f\n", rank, final_max_f);
-
-    // other ranks updates the positions 
+    
     /* Once we have the forces, we compute the changes in position */
     sim_t += ComputeNewPos(particles, pv, my_npart, final_max_f, starting_i);
-    // printf("[debug] New positions were calculated!\n");
-    // printf("[debug] [%d] Particles: \n", rank);
-    // for (int p = 0; p < npart; p++)
-    //   printf("[debug] Rank: %d, [%d.x]=%f, [%d.y]=%f\n", rank, p, particles[p].x, p, particles[p].y);
-
+   
     // each rank gathers the particles
-    // printf("[debug] [%d] For MPI_Allgatherv, starting address is %p, sending %d\n", rank, particles + nparts[rank], nparts[rank]);
-
     MPI_Allgatherv(particles + starting_is[rank], nparts[rank], MPI_PARTICLE,
                    particles, nparts, starting_is,
                    MPI_PARTICLE, MPI_COMM_WORLD);
@@ -199,6 +159,7 @@ int main(int argc, char *argv[])
     for (i = 0; i < npart; i++)
       fprintf(stdout, "%.5lf %.5lf %.5lf\n", particles[i].x, particles[i].y, particles[i].z);
   }
+  
   MPI_Type_free(&MPI_PARTICLE);
   MPI_Type_free(&MPI_PARTICLEV);
 
