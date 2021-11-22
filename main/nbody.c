@@ -71,7 +71,7 @@ int main(int argc, char *argv[])
   int cnt;      /* number of times in loop */
   double sim_t = 0.0;
 
-  if (rank == 0) {
+  if (rank == ROOT) {
     int tmp;
     tmp = fscanf(stdin, "%d\n", &npart);
     tmp = fscanf(stdin, "%d\n", &cnt);
@@ -154,12 +154,12 @@ int main(int argc, char *argv[])
 
   }
 
-  if (rank == 0) {
+  if (rank == ROOT) {
     int i = 0;
     for (i = 0; i < npart; i++)
       fprintf(stdout, "%.5lf %.5lf %.5lf\n", particles[i].x, particles[i].y, particles[i].z);
   }
-  
+
   MPI_Type_free(&MPI_PARTICLE);
   MPI_Type_free(&MPI_PARTICLEV);
 
